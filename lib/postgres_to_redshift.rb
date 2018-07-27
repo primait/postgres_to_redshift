@@ -18,8 +18,8 @@ class PostgresToRedshift
   MEGABYTE = KILOBYTE * 1024
   GIGABYTE = MEGABYTE * 1024
 
-  def self.update_tables
-    update_tables = PostgresToRedshift.new
+  def self.update_tables(filtered_tables: [])
+    update_tables = PostgresToRedshift.new(filtered_tables: filtered_tables)
 
     update_tables.tables.each do |table|
       target_connection.exec("CREATE TABLE IF NOT EXISTS #{schema}.#{target_connection.quote_ident(table.target_table_name)} (#{table.columns_for_create})")
@@ -59,6 +59,10 @@ class PostgresToRedshift
     ENV.fetch('POSTGRES_TO_REDSHIFT_TARGET_SCHEMA')
   end
 
+  def initialize(filtered_tables: [])
+    @filtered_tables = filtered_tables
+  end
+
   def source_connection
     self.class.source_connection
   end
@@ -70,7 +74,7 @@ class PostgresToRedshift
   def tables
     source_connection.exec("SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_type in ('BASE TABLE', 'VIEW')").map do |table_attributes|
       table = Table.new(attributes: table_attributes)
-      next if table.name =~ /^pg_/
+      next if table.name =~ /^pg_/ || filtered_tables.include?(table.name)
       table.columns = column_definitions(table)
       table
     end.compact
@@ -144,4 +148,8 @@ class PostgresToRedshift
 
     target_connection.exec("COMMIT;")
   end
+
+  private
+
+  attr_reader :filtered_tables
 end
