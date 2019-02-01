@@ -57,6 +57,9 @@ class PostgresToRedshift
 
   def initialize(filtered_tables: [])
     @filtered_tables = filtered_tables
+    Aws.config.update({
+      region: 'eu-west-1'
+    })
   end
 
   def source_connection
