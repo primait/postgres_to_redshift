@@ -2,4 +2,4 @@
 
 require 'postgres_to_redshift'
 
-PostgresToRedshift.update_tables
+PostgresToRedshift.update_tables(filtered_tables: ARGV.dup)
