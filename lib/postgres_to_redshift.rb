@@ -133,8 +133,6 @@ class PostgresToRedshift
     puts "Importing #{table.target_table_name} (deleting it first)"
     schema = self.class.schema
 
-    target_connection.exec("BEGIN;")
-
     target_connection.exec("DROP TABLE IF EXISTS #{schema}.#{prefix}_#{table.target_table_name}")
 
     # target_connection.exec("ALTER TABLE #{schema}.#{target_connection.quote_ident("#{prefix}_#{table.target_table_name}")} RENAME TO #{"#{prefix}_#{table.target_table_name}"}_updating")
@@ -145,8 +143,6 @@ class PostgresToRedshift
     target_connection.exec("CREATE TABLE #{schema}.#{target_connection.quote_ident("#{prefix}_#{table.target_table_name}")} (#{table.columns_for_create}) #{sort_keys()}")
 
     target_connection.exec("COPY #{schema}.#{target_connection.quote_ident("#{prefix}_#{table.target_table_name}")} FROM 's3://#{ENV['S3_DATABASE_EXPORT_BUCKET']}/data/#{table.target_table_name}/#{table.target_table_name}.psv.gz' CREDENTIALS 'aws_iam_role=arn:aws:iam::001575623345:role/redshift-spectrum-role-dev' GZIP TRUNCATECOLUMNS ESCAPE DELIMITER as '|';")
-
-    target_connection.exec("COMMIT;")
 
   rescue PG::UnableToSend
     retry if (retries += 1) < 3
